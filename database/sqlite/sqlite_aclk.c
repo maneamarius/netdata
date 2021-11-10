@@ -11,6 +11,8 @@
 #endif
 
 const char *aclk_sync_config[] = {
+    "DROP TABLE IF EXISTS dimension_delete;",
+    "DROP TRIGGER IF EXISTS tr_dim_del;",
     "CREATE TABLE IF NOT EXISTS dimension_delete (dimension_id blob, dimension_name text, chart_type_id text, "
     "dim_id blob, chart_id blob, host_id blob, date_created);",
 
