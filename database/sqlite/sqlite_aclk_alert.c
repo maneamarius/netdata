@@ -10,7 +10,7 @@
 
 // will replace call to aclk_update_alarm in health/health_log.c
 // and handle both cases
-void sql_queue_alarm_to_aclk(RRDHOST *host, ALARM_ENTRY *ae)
+int sql_queue_alarm_to_aclk(RRDHOST *host, ALARM_ENTRY *ae)
 {
     //check aclk architecture and handle old json alarm update to cloud
     //include also the valid statuses for this case
@@ -23,35 +23,75 @@ void sql_queue_alarm_to_aclk(RRDHOST *host, ALARM_ENTRY *ae)
             ((ae->old_status == RRDCALC_STATUS_WARNING || ae->old_status == RRDCALC_STATUS_CRITICAL))) {
             aclk_update_alarm(host, ae);
         }
-        return;
+        return 1;
 #endif
 #ifdef ENABLE_NEW_CLOUD_PROTOCOL
     }
 
     if (ae->flags & HEALTH_ENTRY_FLAG_ACLK_QUEUED)
-        return;
+        return 1;
 
     if (ae->new_status == RRDCALC_STATUS_REMOVED || ae->new_status == RRDCALC_STATUS_UNINITIALIZED)
-        return;
+        return 1;
 
     if (unlikely(!host->dbsync_worker))
-        return;
+        return 1;
 
     if (unlikely(uuid_is_null(ae->config_hash_id)))
-        return;
+        return 1;
 
-    struct aclk_database_cmd cmd;
-    memset(&cmd, 0, sizeof(cmd));
-    cmd.opcode = ACLK_DATABASE_ADD_ALERT;
-    cmd.data = ae;
-    cmd.completion = NULL;
-    aclk_database_enq_cmd((struct aclk_database_worker_config *) host->dbsync_worker, &cmd);
-    ae->flags |= HEALTH_ENTRY_FLAG_ACLK_QUEUED;
+    /* struct aclk_database_cmd cmd; */
+    /* memset(&cmd, 0, sizeof(cmd)); */
+    /* cmd.opcode = ACLK_DATABASE_ADD_ALERT; */
+    /* cmd.data = ae; */
+    /* cmd.completion = NULL; */
+    /* aclk_database_enq_cmd((struct aclk_database_worker_config *) host->dbsync_worker, &cmd); */
+
+    int rc = 0;
+
+    CHECK_SQLITE_CONNECTION(db_meta);
+
+    sqlite3_stmt *res_alert = NULL;
+    char uuid_str[GUID_LEN + 1];
+    uuid_unparse_lower_fix(&host->host_uuid, uuid_str);
+
+    BUFFER *sql = buffer_create(1024);
+
+    buffer_sprintf(
+        sql,
+        "INSERT INTO aclk_alert_%s (alert_unique_id, date_created) "
+        "VALUES (@alert_unique_id, strftime('%%s')); ",
+        uuid_str);
+
+    rc = sqlite3_prepare_v2(db_meta, buffer_tostring(sql), -1, &res_alert, 0);
+    if (unlikely(rc != SQLITE_OK)) {
+        error_report("Failed to prepare statement to store alert event");
+        buffer_free(sql);
+        return 1;
+    }
+
+    rc = sqlite3_bind_int(res_alert, 1, ae->unique_id);
+    if (unlikely(rc != SQLITE_OK))
+        goto bind_fail;
+
+    rc = execute_insert(res_alert);
+    if (unlikely(rc != SQLITE_DONE))
+        error_report("Failed to store alert event %u, rc = %d", ae->unique_id, rc);
+    else
+        ae->flags |= HEALTH_ENTRY_FLAG_ACLK_QUEUED;
+
+bind_fail:
+    if (unlikely(sqlite3_finalize(res_alert) != SQLITE_OK))
+        error_report("Failed to reset statement in store alert event, rc = %d", rc);
+
+    buffer_free(sql);
+    return (rc != SQLITE_DONE);
+
 #else
     UNUSED(host);
     UNUSED(ae);
 #endif
-    return;
+    return 0;
 }
 
 // stores an alert entry to aclk_alert_ table
