@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Package tree used for installing netdata on distribution:
 # << Gentoo >>
+# shellcheck disable=SC2068,SC2086
 
 source ./functions.sh
 
@@ -9,7 +10,7 @@ set -e
 NON_INTERACTIVE=0
 export DONT_WAIT=0
 
-check_flags "${@}"
+check_flags ${@}
 
 package_tree="
   dev-vcs/git
@@ -41,7 +42,7 @@ package_tree="
 packages_to_install=
 
 for package in $package_tree; do
-  if qlist -IRv "$package" &> /dev/null; then
+  if qlist -IRv $package &> /dev/null; then
     echo "Package '${package}' is installed"
   else
     echo "Package '${package}' is NOT installed"
@@ -52,11 +53,11 @@ done
 if [[ -z "$packages_to_install" ]]; then
   echo "All required packages are already installed. Skipping .."
 else
-  echo "packages_to_install: $packages_to_install"
+  echo "packages_to_install:" $packages_to_install
   opts="--ask"
   if [ "${NON_INTERACTIVE}" -eq 1 ]; then
     echo >&2 "Running in non-interactive mode"
     opts=""
   fi
-  emerge "${opts}" "$packages_to_install"
+  emerge ${opts} $packages_to_install
 fi
