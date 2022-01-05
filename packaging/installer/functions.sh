@@ -51,6 +51,7 @@ setup_terminal() {
       TPUT_BLUE="$(tput setaf 4)"
       # shellcheck disable=SC2034
       TPUT_PURPLE="$(tput setaf 5)"
+      # shellcheck disable=SC2034
       TPUT_CYAN="$(tput setaf 6)"
       TPUT_WHITE="$(tput setaf 7)"
       # shellcheck disable=SC2034

@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 # SPDX-License-Identifier: GPL-3.0-or-later
-# shellcheck disable=SC2046,SC2086,SC2166
+# shellcheck disable=SC2030,SC2031,SC2046,SC2086,SC2166,SC2269
 
 export PATH="${PATH}:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
 uniquepath() {
