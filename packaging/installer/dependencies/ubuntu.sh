@@ -3,10 +3,13 @@
 # << Ubuntu >>
 # supported versions: 18.04 20.04 20.10 21.04 21.10 
 
-# shellcheck source=/dev/null
-source ./functions.sh
+set -xe
 
-set -e
+PROGRAM="$0"
+INSTALLER_DIR="$(dirname "${PROGRAM}")"
+
+# shellcheck source=packaging/installer/functions.sh
+source "${INSTALLER_DIR}/../functions.sh"
 
 NON_INTERACTIVE=0
 export DONT_WAIT=0
