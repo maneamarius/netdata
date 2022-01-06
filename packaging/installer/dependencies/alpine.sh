@@ -4,6 +4,7 @@
 # supported versions: 3.12, 3.13, 3.14, 3.15, edge
 # shellcheck disable=SC2068,SC2086
 
+# shellcheck source=/dev/null
 source ./functions.sh
 
 set -e

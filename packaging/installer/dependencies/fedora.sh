@@ -2,8 +2,9 @@
 # Package tree used for installing netdata on distribution:
 # << Fedora >>
 # supported versions: 24->35
-# shellcheck disable=SC2068,SC2086
+# shellcheck disable=SC2068,SC2086,SC2002
 
+# shellcheck source=/dev/null
 source ./functions.sh
 
 set -e
@@ -45,7 +46,7 @@ declare -a package_tree=(
   libmnl-devel
   json-c-devel
   libuv-devel
-  lz4-devel
+  z4-devel
   openssl-devel
   Judy-devel
   elfutils-libelf-devel

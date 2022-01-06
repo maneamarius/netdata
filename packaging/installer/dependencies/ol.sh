@@ -2,8 +2,9 @@
 # Package tree used for installing netdata on distribution:
 # << Oracle Linux >>
 # supported versions: 8
-# shellcheck disable=SC2068,SC2086
+# shellcheck disable=SC2068,SC2086,SC2002
 
+# shellcheck source=/dev/null
 source ./functions.sh
 
 set -e

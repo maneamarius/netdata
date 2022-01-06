@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Package tree used for installing netdata on distribution:
 # << FreeBSD  >>
-# shellcheck disable=SC2068,SC2086
+# shellcheck disable=SC2068,SC2086,SC2002
 
+# shellcheck source=/dev/null
 source ./functions.sh
 
 set -e

@@ -4,6 +4,7 @@
 # supported versions: 9, 10, 11
 # shellcheck disable=SC2068,SC2086
 
+# shellcheck source=/dev/null
 source ./functions.sh
 
 set -e
