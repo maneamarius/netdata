@@ -46,7 +46,7 @@ declare -a package_tree=(
   libmnl-devel
   json-c-devel
   libuv-devel
-  z4-devel
+  lz4-devel
   openssl-devel
   Judy-devel
   elfutils-libelf-devel
