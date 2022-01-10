@@ -2,14 +2,13 @@
 # Package tree used for installing netdata on distribution:
 # << Alpine >>
 # supported versions: 3.12, 3.13, 3.14, 3.15, edge
-# shellcheck disable=SC2068,SC2086
+# shellcheck disable=SC2068,SC2086,SC1090
 
 set -e
 
 PROGRAM="$0"
 INSTALLER_DIR="$(dirname "${PROGRAM}")"
 
-# shellcheck source=packaging/installer/functions.sh
 source "${INSTALLER_DIR}/../functions.sh"
 
 NON_INTERACTIVE=0

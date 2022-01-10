@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Package tree used for installing netdata on distribution:
 # << Gentoo >>
-# shellcheck disable=SC2068,SC2086
-
-# shellcheck source=/dev/null
-source ./functions.sh
+# shellcheck disable=SC2068,SC2086,SC1090
 
 set -e
+
+PROGRAM="$0"
+INSTALLER_DIR="$(dirname "${PROGRAM}")"
+
+source "${INSTALLER_DIR}/../functions.sh"
 
 NON_INTERACTIVE=0
 export DONT_WAIT=0
