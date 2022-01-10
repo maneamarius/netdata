@@ -2,7 +2,7 @@
 # Package tree used for installing netdata on distribution:
 # << Debian >>
 # supported versions: 9, 10, 11
-# shellcheck disable=SC2068,SC2086,SC1090
+# shellcheck disable=SC2068,SC2086,SC1090,SC1091
 
 set -e
 

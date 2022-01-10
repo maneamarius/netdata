@@ -2,7 +2,7 @@
 # Package tree used for installing netdata on distribution:
 # << Ubuntu >>
 # supported versions: 18.04 20.04 20.10 21.04 21.10
-# shellcheck disable=SC1090
+# shellcheck disable=SC1090,SC1091
 
 set -e
 

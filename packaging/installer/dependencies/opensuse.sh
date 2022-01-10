@@ -3,7 +3,7 @@
 # << opeSUSE >>
 # supported versions: leap/15.3 and tumbleweed
 # it may work with SLES as well, although we have not tested with it
-# shellcheck disable=SC2068,SC2086,SC1090
+# shellcheck disable=SC2068,SC2086,SC1090,SC1091
 
 set -e
 

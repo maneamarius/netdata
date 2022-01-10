@@ -2,7 +2,7 @@
 # Package tree used for installing netdata on distribution:
 # << Alpine >>
 # supported versions: 3.12, 3.13, 3.14, 3.15, edge
-# shellcheck disable=SC2068,SC2086,SC1090
+# shellcheck disable=SC2068,SC2086,SC1090,SC1091
 
 set -e
 
