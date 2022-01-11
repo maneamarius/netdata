@@ -1111,3 +1111,167 @@ check_flags() {
     read -r -p "Press ENTER to run it > " || exit 1
   fi
 }
+
+validate_tree_centos() {
+  local opts=
+  export local package_manager=
+  if [ "${NON_INTERACTIVE}" -eq 1 ]; then
+    echo >&2 "Running in non-interactive mode"
+    opts="-y"
+  fi
+
+  echo >&2 " > CentOS Version: $(os_version) ..."
+
+  if [[ $(os_version) =~ ^8(\..*)?$ ]]; then
+    package_manager=dnf
+    echo >&2 " > Checking for config-manager ..."
+    if ! dnf config-manager; then
+      if prompt "config-manager not found, shall I install it?"; then
+        dnf ${opts} install 'dnf-command(config-manager)'
+      fi
+    fi
+
+    echo >&2 " > Checking for PowerTools ..."
+    if ! dnf repolist | grep PowerTools; then
+      if prompt "PowerTools not found, shall I install it?"; then
+        dnf ${opts} config-manager --set-enabled powertools || enable_powertools_repo
+      fi
+    fi
+
+    echo >&2 " > Updating libarchive ..."
+    dnf ${opts} install libarchive
+
+    echo >&2 " > Installing Judy-devel directly ..."
+    dnf ${opts} install http://mirror.centos.org/centos/8/PowerTools/x86_64/os/Packages/Judy-devel-1.0.5-18.module_el8.3.0+757+d382997d.x86_64.rpm
+    dnf makecache --refresh
+
+  elif [[ $(os_version) =~ ^7(\..*)?$ ]]; then
+    package_manager=yum
+    echo >&2 " > Checking for EPEL ..."
+    if ! rpm -qa | grep epel-release > /dev/null; then
+      if prompt "EPEL not found, shall I install it?"; then
+        yum ${opts} install epel-release
+      fi
+    fi
+    yum makecache
+  fi
+}
+
+enable_powertools_repo() {
+  if ! dnf repolist | grep -q powertools; then
+    cat > /etc/yum.repos.d/powertools.repo <<-EOF
+    [powertools]
+    name=CentOS Linux $releasever - PowerTools
+    mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=PowerTools&infra=$infra
+    #baseurl=http://mirror.centos.org/$contentdir/$releasever/PowerTools/$basearch/os/
+    gpgcheck=1
+    enabled=1
+    gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+EOF
+  else
+    echo "Something went wrong!"
+    exit 1
+  fi
+}
+
+validate_tree_freebsd() {
+  opts=
+  if [ "${NON_INTERACTIVE}" -eq 1 ]; then
+    echo >&2 "Running in non-interactive mode"
+    opts="-y"
+  fi
+
+  echo >&2 " > Checking for gmake ..."
+  if ! pkg query %n-%v | grep -q gmake; then
+    if prompt "gmake is required to build on FreeBSD and is not installed. Shall I install it?"; then
+      pkg install ${opts} gmake
+    fi
+  fi
+}
+
+enable_repo () {
+  if ! dnf repolist | grep -q codeready; then
+cat >> /etc/yum.repos.d/oracle-linux-ol8.repo <<-EOF
+
+[ol8_codeready_builder]
+name=Oracle Linux \$releasever CodeReady Builder (\$basearch)
+baseurl=http://yum.oracle.com/repo/OracleLinux/OL8/codeready/builder/\$basearch
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+EOF
+  else
+    echo "Something went wrong!"
+    exit 1
+  fi
+}
+
+validate_tree_ol() {
+
+  opts=
+  if [ "${NON_INTERACTIVE}" -eq 1 ]; then
+    echo >&2 "Running in non-interactive mode"
+    opts="-y"
+  fi
+
+
+  echo >&2 " > Checking for config-manager ..."
+  if ! dnf config-manager; then
+    if prompt "config-manager not found, shall I install it?"; then
+      dnf ${opts} install 'dnf-command(config-manager)'
+    fi
+  fi
+
+  echo " > Checking for CodeReady Builder ..."
+  if ! dnf repolist | grep ol8_codeready_builder; then
+    if prompt "CodeReadyBuilder not found, shall I install it?"; then
+      dnf ${opts} config-manager --set-enabled ol8_codeready_builder || enable_repo
+    fi
+  fi
+
+  dnf makecache --refresh
+}
+
+validate_tree_rockylinux() {
+  local opts=
+  if [ "${NON_INTERACTIVE}" -eq 1 ]; then
+    echo >&2 "Running in non-interactive mode"
+    opts="-y"
+  fi
+
+  echo >&2 " > Checking for config-manager ..."
+  if ! dnf config-manager; then
+    if prompt "config-manager not found, shall I install it?"; then
+      dnf ${opts} install 'dnf-command(config-manager)'
+    fi
+  fi
+
+  echo >&2 " > Checking for PowerTools ..."
+  if ! dnf repolist | grep PowerTools; then
+    if prompt "PowerTools not found, shall I install it?"; then
+      dnf ${opts} config-manager --set-enabled powertools || enable_powertools_repo
+    fi
+  fi
+
+  echo >&2 " > Updating libarchive ..."
+  dnf ${opts} install libarchive
+
+  dnf makecache --refresh
+}
+
+function enable_powertools_repo {
+  if ! dnf repolist | grep -q powertools; then
+    cat > /etc/yum.repos.d/powertools.repo <<-EOF
+    [powertools]
+    name=Rocky Linux $releasever - PowerTools
+    mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=PowerTools-$releasever
+    #baseurl=http://dl.rockylinux.org/$contentdir/$releasever/PowerTools/$basearch/os/
+    gpgcheck=1
+    enabled=1
+    gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
+EOF
+  else
+    echo "Something went wrong!"
+    exit 1
+  fi
+}
