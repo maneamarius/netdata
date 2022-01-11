@@ -43,50 +43,6 @@ declare -a package_tree=(
   gzip
 )
 
-validate_tree_rockylinux() {
-  local opts=
-  if [ "${NON_INTERACTIVE}" -eq 1 ]; then
-    echo >&2 "Running in non-interactive mode"
-    opts="-y"
-  fi
-
-  echo >&2 " > Checking for config-manager ..."
-  if ! dnf config-manager; then
-    if prompt "config-manager not found, shall I install it?"; then
-      dnf ${opts} install 'dnf-command(config-manager)'
-    fi
-  fi
-
-  echo >&2 " > Checking for PowerTools ..."
-  if ! dnf repolist | grep PowerTools; then
-    if prompt "PowerTools not found, shall I install it?"; then
-      dnf ${opts} config-manager --set-enabled powertools || enable_powertools_repo
-    fi
-  fi
-
-  echo >&2 " > Updating libarchive ..."
-  dnf ${opts} install libarchive
-
-  dnf makecache --refresh
-}
-
-function enable_powertools_repo {
-  if ! dnf repolist | grep -q powertools; then
-    cat > /etc/yum.repos.d/powertools.repo <<-EOF
-    [powertools]
-    name=Rocky Linux $releasever - PowerTools
-    mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=PowerTools-$releasever
-    #baseurl=http://dl.rockylinux.org/$contentdir/$releasever/PowerTools/$basearch/os/
-    gpgcheck=1
-    enabled=1
-    gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
-EOF
-  else
-    echo "Something went wrong!"
-    exit 1
-  fi
-}
-
 validate_tree_rockylinux
 
 packages_to_install=

@@ -15,7 +15,6 @@ export DONT_WAIT=0
 
 check_flags ${@}
 
-packages_to_install=
 package_tree="
   git
   gcc
@@ -38,36 +37,9 @@ package_tree="
   Judy
   python3
   "
-
-function os_version {
-  if [[ -f /etc/os-release ]]; then
-    cat /etc/os-release | grep VERSION_ID | cut -d'=' -f2
-  else
-    echo "Erorr: Cannot determine OS version!"
-    exit 1
-  fi
-}
-
-version=$(os_version)
-
-validate_tree_freebsd() {
-  opts=
-  if [ "${NON_INTERACTIVE}" -eq 1 ]; then
-    echo >&2 "Running in non-interactive mode"
-    opts="-y"
-  fi
-
-  echo >&2 " > FreeBSD Version: ${version} ..."
-
-  echo >&2 " > Checking for gmake ..."
-  if ! pkg query %n-%v | grep -q gmake; then
-    if prompt "gmake is required to build on FreeBSD and is not installed. Shall I install it?"; then
-      pkg install ${opts} gmake
-    fi
-  fi
-}
-
 validate_tree_freebsd
+
+packages_to_install=
 
 for package in $package_tree; do
   if pkg info -Ix $package &> /dev/null; then
