@@ -2,19 +2,12 @@
 # Package tree used for installing netdata on distribution:
 # << Debian >>
 # supported versions: 9, 10, 11
-# shellcheck disable=SC2068,SC2086,SC1090,SC1091
+# shellcheck disable=SC2068,SC2086
 
 set -e
 
-PROGRAM="$0"
-INSTALLER_DIR="$(dirname "${PROGRAM}")"
-
-source "${INSTALLER_DIR}/../functions.sh"
-
 NON_INTERACTIVE=0
-export DONT_WAIT=0
-
-check_flags ${@}
+DONT_WAIT=0
 
 package_tree="
   git
@@ -44,6 +37,45 @@ package_tree="
   python
   python3
   "
+
+usage() {
+  cat << EOF
+OPTIONS:
+[--dont-wait] [--non-interactive] [ ]
+EOF
+}
+
+check_flags() {
+  while [ -n "${1}" ]; do
+    case "${1}" in
+      dont-wait | --dont-wait | -n)
+        DONT_WAIT=1
+        ;;
+
+      non-interactive | --non-interactive | -y)
+        NON_INTERACTIVE=1
+        ;;
+
+      help | -h | --help)
+        usage
+        exit 1
+        ;;
+      *)
+        echo >&2 "ERROR: Cannot understand option '${1}'"
+        echo >&2
+        usage
+        exit 1
+        ;;
+    esac
+    shift
+  done
+
+  if [ "${DONT_WAIT}" -eq 0 ] && [ "${NON_INTERACTIVE}" -eq 0 ]; then
+    read -r -p "Press ENTER to run it > " || exit 1
+  fi
+}
+
+check_flags ${@}
 
 packages_to_install=
 
