@@ -137,9 +137,11 @@ umask 002
 renice 19 $$ > /dev/null 2> /dev/null
 
 # you can set CFLAGS before running installer
+# shellcheck disable=SC2269
 LDFLAGS="${LDFLAGS}"
 CFLAGS="${CFLAGS--O2}"
 [ "z${CFLAGS}" = "z-O3" ] && CFLAGS="-O2"
+# shellcheck disable=SC2269
 ACLK="${ACLK}"
 
 # keep a log of this command
