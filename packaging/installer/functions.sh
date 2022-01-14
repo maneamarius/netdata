@@ -231,7 +231,6 @@ find_processors() {
     gnproc && return
   fi
 
-  cpus
   if [ -f "/proc/cpuinfo" ]; then
     # linux
     cpus=$(grep -c ^processor /proc/cpuinfo)
@@ -604,8 +603,6 @@ stop_netdata_on_pid() {
 }
 
 netdata_pids() {
-  p=''
-  ns=''
   myns="$(readlink /proc/self/ns/pid 2> /dev/null)"
 
   for p in \
@@ -621,8 +618,6 @@ netdata_pids() {
 }
 
 stop_all_netdata() {
-  p=''
-  uname=''
 
   if [ "${UID}" -eq 0 ]; then
     uname="$(uname 2> /dev/null)"
@@ -984,7 +979,6 @@ cleanup_old_netdata_updater() {
 }
 
 enable_netdata_updater() {
-  updater_type
 
   if [ -n "${1}" ] ; then
     updater_type="${1}"

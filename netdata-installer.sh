@@ -1,7 +1,6 @@
 #!/usr/bin/env sh
 
 # SPDX-License-Identifier: GPL-3.0-or-later
-# shellcheck disable=SC2030,SC2031,SC2046,SC2086,SC2166,SC2269
 
 export PATH="${PATH}:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
 uniquepath() {
@@ -93,11 +92,11 @@ defer_error_highlighted() {
   NETDATA_DEFERRED_ERRORS="${TPUT_YELLOW}${TPUT_BOLD}${NETDATA_DEFERRED_ERRORS}\n* ${1}${TPUT_RESET}"
 }
 
+# shellcheck disable=SC2059,SC2086
 print_deferred_errors() {
   if [ -n "${NETDATA_DEFERRED_ERRORS}" ]; then
     echo >&2
     echo >&2 "The following non-fatal errors were encountered during the installation process:"
-    # shellcheck disable=SC2059
     printf >&2 "${NETDATA_DEFERRED_ERRORS}"
     echo >&2
   fi
@@ -119,6 +118,7 @@ download_go() {
 }
 
 # make sure we save all commands we run
+# shellcheck disable=SC2034
 run_logfile="netdata-installer.log"
 
 
@@ -220,7 +220,6 @@ USAGE: ${PROGRAM} [options]
   --disable-ebpf             Disable eBPF Kernel plugin (Default: enabled)
   --disable-cloud            Disable all Netdata Cloud functionality.
   --require-cloud            Fail the install if it can't build Netdata Cloud support.
-  --aclk-legacy              Forces build of ACLK Legacy which is fallback by default.
   --enable-plugin-freeipmi   Enable the FreeIPMI plugin. Default: enable it when libipmimonitoring is available.
   --disable-plugin-freeipmi
   --disable-https            Explicitly disable TLS support
@@ -290,7 +289,6 @@ while [ -n "${1}" ]; do
   case "${1}" in
     "--zlib-is-really-here") LIBS_ARE_HERE=1 ;;
     "--libs-are-really-here") LIBS_ARE_HERE=1 ;;
-    "--use-system-lws") USE_SYSTEM_LWS=1 ;;
     "--use-system-protobuf")
       USE_SYSTEM_PROTOBUF=1
       NETDATA_CONFIGURE_OPTIONS="$(echo "${NETDATA_CONFIGURE_OPTIONS%--without-bundled-protobuf}" | sed 's/$/ --without-bundled-protobuf/g')"
@@ -353,10 +351,6 @@ while [ -n "${1}" ]; do
     "--enable-ebpf") NETDATA_DISABLE_EBPF=0 ;;
     "--disable-ebpf") NETDATA_DISABLE_EBPF=1 NETDATA_CONFIGURE_OPTIONS="$(echo "${NETDATA_CONFIGURE_OPTIONS%--disable-ebpf)}" | sed 's/$/ --disable-ebpf/g')" ;;
     "--skip-available-ram-check") SKIP_RAM_CHECK=1 ;;
-    "--aclk-ng") ;;
-    "--aclk-legacy")
-      NETDATA_CONFIGURE_OPTIONS="$(echo "${NETDATA_CONFIGURE_OPTIONS%--with-aclk-legacy)}" | sed 's/$/ --with-aclk-legacy/g')"
-      ;;
     "--disable-cloud")
       if [ -n "${NETDATA_REQUIRE_CLOUD}" ]; then
         echo "Cloud explicitly enabled, ignoring --disable-cloud."
@@ -412,6 +406,7 @@ if [ "$(uname -s)" = "Linux" ] && [ -f /proc/meminfo ]; then
   base=1024
   scale=256
 
+  # shellcheck disable=SC2086
   if [ -n "${MAKEOPTS}" ]; then
     proc_count="$(echo ${MAKEOPTS} | grep -oE '\-j *[[:digit:]]+' | tr -d '\-j ')"
   else
@@ -510,6 +505,7 @@ BANNER4
 fi
 
 have_autotools=
+# shellcheck disable=SC2046,SC2086
 if [ "$(type autoreconf 2> /dev/null)" ]; then
   autoconf_maj_min() {
     OLDIFS=$IFS
@@ -525,7 +521,7 @@ if [ "$(type autoreconf 2> /dev/null)" ]; then
 
   if [ "$AMAJ" -gt 2 ]; then
     have_autotools=Y
-  elif [ "$AMAJ" -eq 2 -a "$AMIN" -ge 60 ]; then
+  elif [ "$AMAJ" -eq 2 ] && [ "$AMIN" -ge 60 ]; then
     have_autotools=Y
   else
     echo "Found autotools $AMAJ.$AMIN"
@@ -620,7 +616,7 @@ fi
 trap build_error EXIT
 
 # -----------------------------------------------------------------------------
-
+# shellcheck disable=SC2086
 build_protobuf() {
   env_cmd=''
 
@@ -708,6 +704,7 @@ build_judy() {
   fi
 
   cd "${1}" > /dev/null || return 1
+  # shellcheck disable=SC2086
   if run ${env_cmd} ${libtoolize} --force --copy &&
     run ${env_cmd} aclocal &&
     run ${env_cmd} autoheader &&
@@ -790,7 +787,7 @@ bundle_judy() {
 bundle_judy
 
 # -----------------------------------------------------------------------------
-
+# shellcheck disable=SC2086
 build_jsonc() {
   env_cmd=''
 
@@ -804,6 +801,7 @@ build_jsonc() {
   cd - > /dev/null || exit 1
 }
 
+# shellcheck disable=SC2086
 copy_jsonc() {
   target_dir="${PWD}/externaldeps/jsonc"
 
@@ -884,6 +882,7 @@ rename_libbpf_packaging() {
 }
 
 
+# shellcheck disable=SC2086
 build_libbpf() {
   cd "${1}/src" > /dev/null || exit 1
   mkdir root build
@@ -983,6 +982,7 @@ if [ "$have_autotools" ]; then
   run autoreconf -ivf || exit 1
 fi
 
+# shellcheck disable=SC2086
 run ./configure \
   --prefix="${NETDATA_PREFIX}/usr" \
   --sysconfdir="${NETDATA_PREFIX}/etc" \
@@ -1010,6 +1010,7 @@ run $make clean
 # -----------------------------------------------------------------------------
 progress "Compile netdata"
 
+# shellcheck disable=SC2086
 run $make ${MAKEOPTS} || exit 1
 
 [ -n "${GITHUB_ACTIONS}" ] && echo "::endgroup::"
@@ -1031,7 +1032,7 @@ if [ -d "${NETDATA_PREFIX}/etc/netdata" ]; then
   # move the charts.d config files
   for x in apache ap cpu_apps cpufreq example exim hddtemp load_average mem_apps mysql nginx nut opensips phpfpm postfix sensors squid tomcat; do
     for y in "" ".old" ".orig"; do
-      if [ -f "${NETDATA_PREFIX}/etc/netdata/${x}.conf${y}" -a ! -f "${NETDATA_PREFIX}/etc/netdata/charts.d/${x}.conf${y}" ]; then
+      if [ -f "${NETDATA_PREFIX}/etc/netdata/${x}.conf${y}" ] && [ ! -f "${NETDATA_PREFIX}/etc/netdata/charts.d/${x}.conf${y}" ]; then
         run mv -f "${NETDATA_PREFIX}/etc/netdata/${x}.conf${y}" "${NETDATA_PREFIX}/etc/netdata/charts.d/${x}.conf${y}"
       fi
     done
@@ -1044,7 +1045,7 @@ if [ -d "${NETDATA_PREFIX}/etc/netdata" ]; then
   # move the node.d config files
   for x in named sma_webbox snmp; do
     for y in "" ".old" ".orig"; do
-      if [ -f "${NETDATA_PREFIX}/etc/netdata/${x}.conf${y}" -a ! -f "${NETDATA_PREFIX}/etc/netdata/node.d/${x}.conf${y}" ]; then
+      if [ -f "${NETDATA_PREFIX}/etc/netdata/${x}.conf${y}" ] && [ ! -f "${NETDATA_PREFIX}/etc/netdata/node.d/${x}.conf${y}" ]; then
         run mv -f "${NETDATA_PREFIX}/etc/netdata/${x}.conf${y}" "${NETDATA_PREFIX}/etc/netdata/node.d/${x}.conf${y}"
       fi
     done
@@ -1085,7 +1086,7 @@ if [ ! -f "${NETDATA_PREFIX}/etc/netdata/.installer-cleanup-of-stock-configs-don
       t=$("${t}" | sed ".conf.orig/.conf")
       t=$("${t}" | sed "orig//")
 
-      if [ -z "${md5sum}" -o ! -x "${md5sum}" ]; then
+      if [ -z "${md5sum}" ] || [ ! -x "${md5sum}" ]; then
         # we don't have md5sum - keep it
         echo >&2 "File '${TPUT_CYAN}${x}${TPUT_RESET}' ${TPUT_RED}is not known to distribution${TPUT_RESET}. Keeping it."
       else
@@ -1096,6 +1097,7 @@ if [ ! -f "${NETDATA_PREFIX}/etc/netdata/.installer-cleanup-of-stock-configs-don
           # it is a stock version - remove it
           echo >&2 "File '${TPUT_CYAN}${x}${TPUT_RESET}' is stock version of '${t}'."
           run rm -f "${x}"
+	  # shellcheck disable=SC2030
           deleted_stock_configs=$((deleted_stock_configs + 1))
         else
           # edited by user - keep it
@@ -1103,7 +1105,7 @@ if [ ! -f "${NETDATA_PREFIX}/etc/netdata/.installer-cleanup-of-stock-configs-don
         fi
       fi
     fi
-  done 
+  done
 fi
 touch "${NETDATA_PREFIX}/etc/netdata/.installer-cleanup-of-stock-configs-done"
 
@@ -1237,6 +1239,7 @@ fi
 [ ! -d "${NETDATA_STOCK_CONFIG_DIR}" ] && mkdir -p "${NETDATA_STOCK_CONFIG_DIR}"
 
 helplink="000.-.USE.THE.orig.LINK.TO.COPY.AND.EDIT.STOCK.CONFIG.FILES"
+# shellcheck disable=SC2031
 [ ${deleted_stock_configs} -eq 0 ] && helplink=""
 for link in "orig" "${helplink}"; do
   if [ -n "${link}" ]; then
@@ -1281,6 +1284,7 @@ run chmod 770 "${NETDATA_CLAIMING_DIR}"
 
 # --- plugins ----
 
+# shellcheck disable=SC2086
 if [ "${UID}" -eq 0 ]; then
   # find the admin group
   admin_group=
@@ -1323,28 +1327,33 @@ if [ "${UID}" -eq 0 ]; then
     run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/nfacct.plugin"
   fi
 
+  # shellcheck disable=SC2086
   if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin" ]; then
     run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin"
     run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin"
   fi
 
+  # shellcheck disable=SC2086
   if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin" ]; then
-    run chown root:"${NETDATA_GROUP}" "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin"
+    run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin"
     run chmod 0750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin"
     run sh -c "setcap cap_perfmon+ep \"${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin\" || setcap cap_sys_admin+ep \"${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin\""
   fi
 
+  # shellcheck disable=SC2086
   if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin" ]; then
     run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin"
     run chmod 0750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin"
     run setcap cap_dac_read_search+ep "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin"
   fi
 
+  # shellcheck disable=SC2086
   if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping" ]; then
     run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping"
     run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping"
   fi
 
+  # shellcheck disable=SC2086
   if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ebpf.plugin" ]; then
     run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ebpf.plugin"
     run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ebpf.plugin"
@@ -1376,6 +1385,8 @@ fi
 # 1 - version1 > version2
 # 2 - version2 > version1
 # 3 - error
+
+# shellcheck disable=SC2086
 govercomp() {
   # version in file:
   # - v0.14.0
@@ -1403,6 +1414,7 @@ govercomp() {
           return 3
   fi
 
+  # shellcheck disable=SC2086
   for i in $(seq 1 $((num1+1))); do
           x=$(echo $ver1 | cut -d'.' -f$i)
           y=$(echo $ver2 | cut -d'.' -f$i)
@@ -1832,7 +1844,9 @@ if [ -f "${NETDATA_PREFIX}"/usr/libexec/netdata-uninstaller.sh ]; then
   rm -f "${NETDATA_PREFIX}"/usr/libexec/netdata-uninstaller.sh
 fi
 
+# shellcheck disable=SC2086
 sed "s|ENVIRONMENT_FILE=\"/etc/netdata/.environment\"|ENVIRONMENT_FILE=\"${NETDATA_PREFIX}/etc/netdata/.environment\"|" packaging/installer/netdata-uninstaller.sh > ${NETDATA_PREFIX}/usr/libexec/netdata/netdata-uninstaller.sh
+# shellcheck disable=SC2086
 chmod 750 ${NETDATA_PREFIX}/usr/libexec/netdata/netdata-uninstaller.sh
 
 # -----------------------------------------------------------------------------
@@ -1863,6 +1877,7 @@ cleanup_old_netdata_updater || run_failed "Cannot cleanup old netdata updater to
 install_netdata_updater || run_failed "Cannot install netdata updater tool."
 
 progress "Check if we must enable/disable the netdata updater tool"
+# shellcheck disable=SC2086
 if [ "${AUTOUPDATE}" = "1" ]; then
   enable_netdata_updater ${AUTO_UPDATE_TYPE} || run_failed "Cannot enable netdata updater tool"
 else
