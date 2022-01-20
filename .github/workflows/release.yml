@@ -36,20 +36,57 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == 'schedule' ] || [ "${{ github.event.inputs.type }}" == 'nightly' ]; then
             # TODO: Nightly setup code.
+            # Generate nightly changelog
+            .travis/nightlies.sh
+            .travis/check_changelog_last_modification.sh
             echo "::set-output name=ref::master"
           elif [ "${{ github.event.inputs.type }}" == 'patch' ]; then
             # TODO: patch release setup code.
+            # Support activities
+            echo "GIT Branch:" && git branch
+            echo "Last commit:" && git log -1
+            echo "GIT Describe:" && git describe
+            echo "packaging/version:" && cat packaging/version
+            if [[ -z "${GIT_TAG}" ]]; then  echo "Running set tag for release" && set_tag_for_release; fi;
+            .travis/generate_changelog_and_tag_release.sh
           elif [ "${{ github.event.inputs.type }}" == 'minor' ]; then
             # TODO: minor release setup code.
+            # Support activities
+            echo "GIT Branch:" && git branch
+            echo "Last commit:" && git log -1
+            echo "GIT Describe:" && git describe
+            echo "packaging/version:" && cat packaging/version
+            if [[ -z "${GIT_TAG}" ]]; then  echo "Running set tag for release" && set_tag_for_release; fi;
+            .travis/generate_changelog_and_tag_release.sh
           elif [ "${{ github.event.inputs.type }}" == 'major' ]; then
             # TODO: major release setup code.
+            # Support activities
+            echo "GIT Branch:" && git branch
+            echo "Last commit:" && git log -1
+            echo "GIT Describe:" && git describe
+            echo "packaging/version:" && cat packaging/version
+            if [[ -z "${GIT_TAG}" ]]; then  echo "Running set tag for release" && set_tag_for_release; fi;
+            .travis/generate_changelog_and_tag_release.sh
             echo "::set-output name=ref::master"
           else
             echo '::error::Unrecognized release type.'
             exit 1
           fi
-
           echo "::set-output name=version::$(cat packaging/version | sed 's/^v//')"
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Changes in this Release
+            - First Change
+            - Second Change
+          draft: false
+          prerelease: false
       - name: Failure Notification
         uses: rtCamp/action-slack-notify@v2
         env:
