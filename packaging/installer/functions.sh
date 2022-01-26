@@ -1,7 +1,6 @@
 #!/bin/sh
 
 # SPDX-License-Identifier: GPL-3.0-or-later
-# shellcheck disable=SC2034
 
 # make sure we have a UID
 [ -z "${UID}" ] && UID="$(id -u)"
@@ -396,22 +395,13 @@ issystemd() {
 }
 
 get_systemd_service_dir() {
-  SYSTEMD_DIRECTORY=""
-  key="$(get_os_key)"
-
   if [ -w "/lib/systemd/system" ]; then
-    SYSTEMD_DIRECTORY="/lib/systemd/system"
+    echo "/lib/systemd/system"
   elif [ -w "/usr/lib/systemd/system" ]; then
-    SYSTEMD_DIRECTORY="/usr/lib/systemd/system"
+    echo "/usr/lib/systemd/system"
   elif [ -w "/etc/systemd/system" ]; then
-    SYSTEMD_DIRECTORY="/etc/systemd/system"
+    echo "/etc/systemd/system"
   fi
-
-  if expr "${key}" : "^devuan*" || [ "${key}" = "debian-7" ] || [ "${key}" = "ubuntu-12.04" ] || [ "${key}" = "ubuntu-14.04" ]; then
-    SYSTEMD_DIRECTORY="/etc/systemd/system"
-  fi
-
-  echo "${SYSTEMD_DIRECTORY}"
 }
 
 install_non_systemd_init() {
@@ -1051,4 +1041,3 @@ disable_netdata_updater() {
 set_netdata_updater_channel() {
   sed -i -e "s/^RELEASE_CHANNEL=.*/RELEASE_CHANNEL=\"${RELEASE_CHANNEL}\"/" "${NETDATA_USER_CONFIG_DIR}/.environment"
 }
-

@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -92,12 +92,11 @@ defer_error_highlighted() {
   NETDATA_DEFERRED_ERRORS="${TPUT_YELLOW}${TPUT_BOLD}${NETDATA_DEFERRED_ERRORS}\n* ${1}${TPUT_RESET}"
 }
 
-# shellcheck disable=SC2059,SC2086
 print_deferred_errors() {
   if [ -n "${NETDATA_DEFERRED_ERRORS}" ]; then
     echo >&2
     echo >&2 "The following non-fatal errors were encountered during the installation process:"
-    printf >&2 "${NETDATA_DEFERRED_ERRORS}"
+    printf '%s' >&2 "${NETDATA_DEFERRED_ERRORS}"
     echo >&2
   fi
 }
@@ -118,6 +117,7 @@ download_go() {
 }
 
 # make sure we save all commands we run
+# Variable is used by code in the packaging/installer/functions.sh
 # shellcheck disable=SC2034
 run_logfile="netdata-installer.log"
 
@@ -145,14 +145,14 @@ CFLAGS="${CFLAGS--O2}"
 ACLK="${ACLK}"
 
 # keep a log of this command
-# shellcheck disable=SC2129
-printf "\n# " >> netdata-installer.log
-date >> netdata-installer.log
-printf 'CFLAGS="%s" ' "${CFLAGS}" >> netdata-installer.log
-printf 'LDFLAGS="%s" ' "${LDFLAGS}" >> netdata-installer.log
-printf "%s" "${PROGRAM}" "${@}" >> netdata-installer.log
-printf "\n" >> netdata-installer.log
-
+{
+printf "\n# "
+date
+printf 'CFLAGS="%s" ' "${CFLAGS}"
+printf 'LDFLAGS="%s" ' "${LDFLAGS}"
+printf "%s" "${PROGRAM}" "${@}"
+printf "\n"
+} >> netdata-installer.log
 REINSTALL_OPTIONS="$(
   printf "%s" "${*}"
   printf "\n"
@@ -450,7 +450,7 @@ elif echo "${MAKEOPTS}" | grep -vqF -e "-j"; then
   MAKEOPTS="${MAKEOPTS} -j$(find_processors)"
 fi
 
-if [ "${UID}" -ne 0 ]; then
+if [ "$(id -u)" -ne 0 ]; then
   if [ -z "${NETDATA_PREFIX}" ]; then
     netdata_banner
 	progress "wrong command line options!"
@@ -482,7 +482,7 @@ cat << BANNER1
    - log files      in ${TPUT_CYAN}${NETDATA_PREFIX}/var/log/netdata${TPUT_RESET}
 BANNER1
 
-[ "${UID}" -eq 0 ] && cat << BANNER2
+[ "$(id -u)" -eq 0 ] && cat << BANNER2
    - pid file       at ${TPUT_CYAN}${NETDATA_PREFIX}/var/run/netdata.pid${TPUT_RESET}
    - logrotate file at ${TPUT_CYAN}/etc/logrotate.d/netdata${TPUT_RESET}
 BANNER2
@@ -507,7 +507,6 @@ BANNER4
 fi
 
 have_autotools=
-# shellcheck disable=SC2046,SC2086
 if [ "$(type autoreconf 2> /dev/null)" ]; then
   autoconf_maj_min() {
     OLDIFS=$IFS
@@ -515,7 +514,9 @@ if [ "$(type autoreconf 2> /dev/null)" ]; then
     maj=$1
     min=$2
 
+    # shellcheck disable=SC2046
     set -- $(autoreconf -V | sed -ne '1s/.* \([^ ]*\)$/\1/p')
+    # shellcheck disable=SC2086
     eval $maj=\$1 $min=\$2
     IFS=$OLDIFS
   }
@@ -618,7 +619,6 @@ fi
 trap build_error EXIT
 
 # -----------------------------------------------------------------------------
-# shellcheck disable=SC2086
 build_protobuf() {
   env_cmd=''
 
@@ -627,11 +627,13 @@ build_protobuf() {
   fi
 
   cd "${1}" > /dev/null || return 1
+  # shellcheck disable=SC2086
   if ! run ${env_cmd} ./configure --disable-shared --without-zlib --disable-dependency-tracking --with-pic; then
     cd - > /dev/null || return 1
     return 1
   fi
 
+  # shellcheck disable=SC2086
   if ! run ${env_cmd} $make ${MAKEOPTS}; then
     cd - > /dev/null || return 1
     return 1
@@ -789,7 +791,6 @@ bundle_judy() {
 bundle_judy
 
 # -----------------------------------------------------------------------------
-# shellcheck disable=SC2086
 build_jsonc() {
   env_cmd=''
 
@@ -798,18 +799,20 @@ build_jsonc() {
   fi
 
   cd "${1}" > /dev/null || exit 1
+  # shellcheck disable=SC2086
   run ${env_cmd} cmake -DBUILD_SHARED_LIBS=OFF .
+  # shellcheck disable=SC2086
   run ${env_cmd} ${make} ${MAKEOPTS}
   cd - > /dev/null || exit 1
 }
 
-# shellcheck disable=SC2086
 copy_jsonc() {
   target_dir="${PWD}/externaldeps/jsonc"
 
   run mkdir -p "${target_dir}" "${target_dir}/json-c" || return 1
 
   run cp "${1}/libjson-c.a" "${target_dir}/libjson-c.a" || return 1
+  # shellcheck disable=SC2086
   run cp ${1}/*.h "${target_dir}/json-c" || return 1
 }
 
@@ -884,10 +887,10 @@ rename_libbpf_packaging() {
 }
 
 
-# shellcheck disable=SC2086
 build_libbpf() {
   cd "${1}/src" > /dev/null || exit 1
   mkdir root build
+  # shellcheck disable=SC2086
   run env CFLAGS=-fPIC CXXFLAGS= LDFLAGS= BUILD_STATIC_ONLY=y OBJDIR=build DESTDIR=.. ${make} ${MAKEOPTS} install
   cd - > /dev/null || exit 1
 }
@@ -1096,7 +1099,7 @@ if [ ! -f "${NETDATA_PREFIX}/etc/netdata/.installer-cleanup-of-stock-configs-don
         md5="$(${md5sum} < "${x}" | cut -d ' ' -f 1)"
 
         if config_signature_matches "${md5}" "${t}"; then
-          # it is a stock version - remove it
+	  # it is a stock version - remove it
           echo >&2 "File '${TPUT_CYAN}${x}${TPUT_RESET}' is stock version of '${t}'."
           run rm -f "${x}"
 	  # shellcheck disable=SC2030
@@ -1126,7 +1129,7 @@ progress "Creating standard user and groups for netdata"
 
 NETDATA_WANTED_GROUPS="docker nginx varnish haproxy adm nsd proxy squid ceph nobody"
 NETDATA_ADDED_TO_GROUPS=""
-if [ "${UID}" -eq 0 ]; then
+if [ "$(id -u)" -eq 0 ]; then
   progress "Adding group 'netdata'"
   portable_add_group netdata || :
 
@@ -1171,7 +1174,7 @@ config_option() {
 }
 
 # the user netdata will run as
-if [ "${UID}" = "0" ]; then
+if [ "$(id -u)" = "0" ]; then
   NETDATA_USER="$(config_option "global" "run as user" "netdata")"
   ROOT_USER="root"
 else
@@ -1185,7 +1188,7 @@ echo >&2 "Netdata user and group is finally set to: ${NETDATA_USER}/${NETDATA_GR
 # the owners of the web files
 NETDATA_WEB_USER="$(config_option "web" "web files owner" "${NETDATA_USER}")"
 NETDATA_WEB_GROUP="${NETDATA_GROUP}"
-if [ "${UID}" = "0" ] && [ "${NETDATA_USER}" != "${NETDATA_WEB_USER}" ]; then
+if [ "$(id -u)" = "0" ] && [ "${NETDATA_USER}" != "${NETDATA_WEB_USER}" ]; then
   NETDATA_WEB_GROUP="$(id -g -n "${NETDATA_WEB_USER}")"
   [ -z "${NETDATA_WEB_GROUP}" ] && NETDATA_WEB_GROUP="${NETDATA_WEB_USER}"
 fi
@@ -1286,8 +1289,7 @@ run chmod 770 "${NETDATA_CLAIMING_DIR}"
 
 # --- plugins ----
 
-# shellcheck disable=SC2086
-if [ "${UID}" -eq 0 ]; then
+if [ "$(id -u)" -eq 0 ]; then
   # find the admin group
   admin_group=
   test -z "${admin_group}" && getent group root > /dev/null 2>&1 && admin_group="root"
@@ -1298,6 +1300,7 @@ if [ "${UID}" -eq 0 ]; then
   run chown -R "root:${admin_group}" "${NETDATA_PREFIX}/usr/libexec/netdata"
   run find "${NETDATA_PREFIX}/usr/libexec/netdata" -type d -exec chmod 0755 {} \;
   run find "${NETDATA_PREFIX}/usr/libexec/netdata" -type f -exec chmod 0644 {} \;
+  # shellcheck disable=SC2086
   run find "${NETDATA_PREFIX}/usr/libexec/netdata" -type f -a -name \*.plugin -exec chown :${NETDATA_GROUP} {} \;
   run find "${NETDATA_PREFIX}/usr/libexec/netdata" -type f -a -name \*.plugin -exec chmod 0750 {} \;
   run find "${NETDATA_PREFIX}/usr/libexec/netdata" -type f -a -name \*.sh -exec chmod 0755 {} \;
@@ -1329,35 +1332,30 @@ if [ "${UID}" -eq 0 ]; then
     run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/nfacct.plugin"
   fi
 
-  # shellcheck disable=SC2086
   if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin" ]; then
-    run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin"
+    run chown "root:${NETDATA_GROUP}" "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin"
     run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/xenstat.plugin"
   fi
 
-  # shellcheck disable=SC2086
   if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin" ]; then
-    run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin"
+    run chown "root:${NETDATA_GROUP}" "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin"
     run chmod 0750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin"
     run sh -c "setcap cap_perfmon+ep \"${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin\" || setcap cap_sys_admin+ep \"${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/perf.plugin\""
   fi
 
-  # shellcheck disable=SC2086
   if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin" ]; then
-    run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin"
+    run chown "root:${NETDATA_GROUP}" "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin"
     run chmod 0750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin"
     run setcap cap_dac_read_search+ep "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/slabinfo.plugin"
   fi
 
-  # shellcheck disable=SC2086
   if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping" ]; then
-    run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping"
+    run chown "root:${NETDATA_GROUP}" "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping"
     run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ioping"
   fi
 
-  # shellcheck disable=SC2086
   if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ebpf.plugin" ]; then
-    run chown root:${NETDATA_GROUP} "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ebpf.plugin"
+    run chown "root:${NETDATA_GROUP}" "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ebpf.plugin"
     run chmod 4750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/ebpf.plugin"
   fi
 
@@ -1401,7 +1399,6 @@ govercomp() {
   # - go.d.plugin, version: v0.14.1-1-g4c5f98c-dirty
 
   # we need to compare only MAJOR.MINOR.PATCH part
-
   ver1=$(echo "$1" | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+")
   ver2=$(echo "$2" | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+")
 
@@ -1416,7 +1413,6 @@ govercomp() {
           return 3
   fi
 
-  # shellcheck disable=SC2086
   for i in $(seq 1 $((num1+1))); do
           x=$(echo $ver1 | cut -d'.' -f$i)
           y=$(echo $ver2 | cut -d'.' -f$i)
@@ -1528,7 +1524,7 @@ install_go() {
 
   run tar -xf "${tmp}/${GO_PACKAGE_BASENAME}"
   run mv "${GO_PACKAGE_BASENAME%.tar.gz}" "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/go.d.plugin"
-  if [ "${UID}" -eq 0 ]; then
+  if [ "$(id -u)" -eq 0 ]; then
     run chown "root:${NETDATA_GROUP}" "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/go.d.plugin"
   fi
   run chmod 0750 "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/go.d.plugin"
@@ -1811,7 +1807,7 @@ if [ -f "${NETDATA_PREFIX}/usr/libexec/netdata/plugins.d/apps.plugin" ]; then
   # -----------------------------------------------------------------------------
   progress "Check apps.plugin"
 
-  if [ "${UID}" -ne 0 ]; then
+  if [ "$(id -u)" -ne 0 ]; then
     cat << SETUID_WARNING
 
 ${TPUT_BOLD}apps.plugin needs privileges${TPUT_RESET}
@@ -1846,10 +1842,8 @@ if [ -f "${NETDATA_PREFIX}"/usr/libexec/netdata-uninstaller.sh ]; then
   rm -f "${NETDATA_PREFIX}"/usr/libexec/netdata-uninstaller.sh
 fi
 
-# shellcheck disable=SC2086
-sed "s|ENVIRONMENT_FILE=\"/etc/netdata/.environment\"|ENVIRONMENT_FILE=\"${NETDATA_PREFIX}/etc/netdata/.environment\"|" packaging/installer/netdata-uninstaller.sh > ${NETDATA_PREFIX}/usr/libexec/netdata/netdata-uninstaller.sh
-# shellcheck disable=SC2086
-chmod 750 ${NETDATA_PREFIX}/usr/libexec/netdata/netdata-uninstaller.sh
+sed "s|ENVIRONMENT_FILE=\"/etc/netdata/.environment\"|ENVIRONMENT_FILE=\"${NETDATA_PREFIX}/etc/netdata/.environment\"|" packaging/installer/netdata-uninstaller.sh > "${NETDATA_PREFIX}/usr/libexec/netdata/netdata-uninstaller.sh"
+chmod 750 "${NETDATA_PREFIX}/usr/libexec/netdata/netdata-uninstaller.sh"
 
 # -----------------------------------------------------------------------------
 progress "Basic netdata instructions"
@@ -1879,9 +1873,8 @@ cleanup_old_netdata_updater || run_failed "Cannot cleanup old netdata updater to
 install_netdata_updater || run_failed "Cannot install netdata updater tool."
 
 progress "Check if we must enable/disable the netdata updater tool"
-# shellcheck disable=SC2086
 if [ "${AUTOUPDATE}" = "1" ]; then
-  enable_netdata_updater ${AUTO_UPDATE_TYPE} || run_failed "Cannot enable netdata updater tool"
+  enable_netdata_updater "${AUTO_UPDATE_TYPE}" || run_failed "Cannot enable netdata updater tool"
 else
   disable_netdata_updater || run_failed "Cannot disable netdata updater tool"
 fi
@@ -1901,7 +1894,7 @@ NETDATA_TMPDIR="${TMPDIR}"
 NETDATA_PREFIX="${NETDATA_PREFIX}"
 NETDATA_CONFIGURE_OPTIONS="${NETDATA_CONFIGURE_OPTIONS}"
 NETDATA_ADDED_TO_GROUPS="${NETDATA_ADDED_TO_GROUPS}"
-INSTALL_UID="${UID}"
+INSTALL_UID="$(id -u)"
 NETDATA_GROUP="${NETDATA_GROUP}"
 REINSTALL_OPTIONS="${REINSTALL_OPTIONS}"
 RELEASE_CHANNEL="${RELEASE_CHANNEL}"
