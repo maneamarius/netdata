@@ -222,7 +222,7 @@ static void msg_callback_old_protocol(const char *topic, const void *msg, size_t
         return;
     }
 
-    aclk_handle_cloud_message(cmsg);
+    aclk_handle_cloud_cmd_message(cmsg);
 }
 
 #ifdef ENABLE_NEW_CLOUD_PROTOCOL
@@ -320,7 +320,7 @@ static int handle_connection(mqtt_wss_client client)
             return 1;
         }
 
-        if (disconnect_req) {
+        if (disconnect_req || aclk_kill_link) {
             disconnect_req = 0;
             aclk_graceful_disconnect(client);
             aclk_queue_unlock();

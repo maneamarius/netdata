@@ -2178,7 +2178,7 @@ netdataDashboard.context = {
     },
 
     'netfilter.conntrack_new': {
-        info: '<p>Packet tracking statistics.</p>'+
+        info: '<p>Packet tracking statistics. <b>New</b> (since v4.9) and <b>Ignore</b> (since v5.10) are hardcoded to zeros in the latest kernel.</p>'+
         '<p><b>New</b> - conntrack entries added which were not expected before. '+
         '<b>Ignore</b> - packets seen which are already connected to a conntrack entry. '+
         '<b>Invalid</b> - packets seen which can not be tracked.</p>'
@@ -3592,6 +3592,14 @@ netdataDashboard.context = {
 
     'netdata.response_time': {
         info: 'The netdata API response time measures the time netdata needed to serve requests. This time includes everything, from the reception of the first byte of a request, to the dispatch of the last byte of its reply, therefore it includes all network latencies involved (i.e. a client over a slow network will influence these metrics).'
+    },
+
+    'netdata.ebpf_threads': {
+        info: 'Show total number of threads and number of active threads. For more details about the threads, see the <a href="https://learn.netdata.cloud/docs/agent/collectors/ebpf.plugin#ebpf-programs">official documentation</a>.'
+    },
+
+    'netdata.ebpf_load_methods': {
+        info: 'Show number of threads loaded using legacy code (independent binary) or <code>CO-RE (Compile Once Run Everywhere)</code>.'
     },
 
     // ------------------------------------------------------------------------
@@ -5111,7 +5119,7 @@ netdataDashboard.context = {
     },
 
     'spigotmc.users': {
-        info: 'The number of currently connect users on the monitored Spigot server.'
+        info: 'The number of currently connected users on the monitored Spigot server.'
     },
 
     'boinc.tasks': {

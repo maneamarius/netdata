@@ -851,6 +851,10 @@ void rrdhost_free(RRDHOST *host) {
     rrdpush_sender_thread_stop(host); // stop a possibly running thread
     cbuffer_free(host->sender->buffer);
     buffer_free(host->sender->build);
+#ifdef ENABLE_COMPRESSION
+    if (host->sender->compressor)
+        host->sender->compressor->destroy(&host->sender->compressor);
+#endif
     freez(host->sender);
     host->sender = NULL;
     if (netdata_exit) {
@@ -950,6 +954,7 @@ void rrdhost_free(RRDHOST *host) {
 
     pthread_mutex_destroy(&host->aclk_state_lock);
     freez(host->aclk_state.claimed_id);
+    freez(host->aclk_state.prev_claimed_id);
     freez((void *)host->tags);
     free_label_list(host->labels.head);
     freez((void *)host->os);
