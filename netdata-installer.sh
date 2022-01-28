@@ -146,13 +146,14 @@ ACLK="${ACLK}"
 
 # keep a log of this command
 {
-printf "\n# "
-date
-printf 'CFLAGS="%s" ' "${CFLAGS}"
-printf 'LDFLAGS="%s" ' "${LDFLAGS}"
-printf "%s" "${PROGRAM}" "${@}"
-printf "\n"
+	printf "\n# "
+	date
+	printf 'CFLAGS="%s" ' "${CFLAGS}"
+	printf 'LDFLAGS="%s" ' "${LDFLAGS}"
+	printf "%s" "${PROGRAM}" "${@}"
+	printf "\n"
 } >> netdata-installer.log
+
 REINSTALL_OPTIONS="$(
   printf "%s" "${*}"
   printf "\n"
