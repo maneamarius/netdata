@@ -528,4 +528,3 @@ portable_del_user "netdata" || :
 ### REMOVE GROUP
 user_input "Press ENTER to delete 'netdata' system group > "
 portable_del_group "netdata" || :
-
