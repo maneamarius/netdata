@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 #
 # This is the netdata uninstaller script
 #
@@ -55,10 +55,10 @@ if [ "$YES" != "1" ]; then
   exit 1
 fi
 
-if [[ $EUID -ne 0 ]]; then
+if [ "$(id -u)" -ne 0 ]; then
   echo >&2 "This script SHOULD be run as root or otherwise it won't delete all installed components."
   key="n"
-  read -r -s -n 1 -p "Do you want to continue as non-root user [y/n] ? " key
+  read -r 1 -p "Do you want to continue as non-root user [y/n] ? " key
   if [ "$key" != "y" ] && [ "$key" != "Y" ]; then
     exit 1
   fi
@@ -72,7 +72,8 @@ rcservice_cmd="$(command -v rc-service 2> /dev/null)"
 systemctl_cmd="$(command -v systemctl 2> /dev/null)"
 service() {
 
-  local cmd="${1}" action="${2}"
+  cmd="${1}"
+  action="${2}"
 
   if [ -n "${systemctl_cmd}" ]; then
     run "${systemctl_cmd}" "${action}" "${cmd}"
@@ -127,12 +128,12 @@ run_failed() {
 }
 
 ESCAPED_PRINT_METHOD=
-if printf "%q " test > /dev/null 2>&1; then
+if printf "%s " test > /dev/null 2>&1; then
   ESCAPED_PRINT_METHOD="printfq"
 fi
 escaped_print() {
   if [ "${ESCAPED_PRINT_METHOD}" = "printfq" ]; then
-    printf "%q " "${@}"
+    printf "%s " "${@}"
   else
     printf "%s" "${*}"
   fi
@@ -141,9 +142,10 @@ escaped_print() {
 
 run_logfile="/dev/null"
 run() {
-  local user="${USER--}" dir="${PWD}" info info_console
+  user="${USER--}"
+  dir="${PWD}"
 
-  if [ "${UID}" = "0" ]; then
+  if [ "$(id -u)" = "0" ]; then
     info="[root ${dir}]# "
     info_console="[${TPUT_DIM}${dir}${TPUT_RESET}]# "
   else
@@ -163,7 +165,7 @@ run() {
 
   "${@}"
 
-  local ret=$?
+  ret=$?
   if [ ${ret} -ne 0 ]; then
     run_failed
     printf >> "${run_logfile}" "FAILED with exit code %s\n" "${ret}"
@@ -176,7 +178,7 @@ run() {
 }
 
 portable_del_group() {
-  local groupname="${1}"
+  groupname="${1}"
 
   # Check if group exist
   echo >&2 "Removing ${groupname} user group ..."
@@ -206,7 +208,11 @@ portable_del_group() {
 }
 
 issystemd() {
-  local pids p myns ns systemctl
+  pids=''
+  p=''
+  myns=''
+  ns=''
+  systemctl=''
 
   # if the directory /lib/systemd/system OR /usr/lib/systemd/system (SLES 12.x) does not exit, it is not systemd
   if [ ! -d /lib/systemd/system ] && [ ! -d /usr/lib/systemd/system ]; then
@@ -240,7 +246,7 @@ issystemd() {
 }
 
 portable_del_user() {
-  local username="${1}"
+  username="${1}"
   echo >&2 "Deleting ${username} user account ..."
 
   # Linux
@@ -258,7 +264,8 @@ portable_del_user() {
 }
 
 portable_del_user_from_group() {
-  local groupname="${1}" username="${2}"
+  groupname="${1}"
+  username="${2}"
 
   # username is not in group
   echo >&2 "Deleting ${username} user from ${groupname} group ..."
@@ -298,8 +305,12 @@ quit_msg() {
 
 user_input() {
   TEXT="$1"
-  if [ "${INTERACTIVITY}" = "-i" ]; then
-    read -r -p "$TEXT" >&2
+  echo "$TEXT"
+
+  read -r REPLY
+  if [ "$REPLY" != '' ]; then
+    echo "Exit uninstaller"
+    exit 1
   fi
 }
 
@@ -319,7 +330,6 @@ rm_dir() {
 }
 
 safe_pidof() {
-  local pidof_cmd
   pidof_cmd="$(command -v pidof 2> /dev/null)"
   if [ -n "${pidof_cmd}" ]; then
     ${pidof_cmd} "${@}"
@@ -345,7 +355,9 @@ pidisnetdata() {
 }
 
 stop_netdata_on_pid() {
-  local pid="${1}" ret=0 count=0
+  pid="${1}"
+  ret=0
+  count=0
 
   pidisnetdata "${pid}" || return 0
 
@@ -386,7 +398,8 @@ stop_netdata_on_pid() {
 }
 
 netdata_pids() {
-  local p myns ns
+  p=''
+  ns=''
 
   myns="$(readlink /proc/self/ns/pid 2> /dev/null)"
 
@@ -403,9 +416,9 @@ netdata_pids() {
 }
 
 stop_all_netdata() {
-  local p
+  p=''
 
-  if [ "${UID}" -eq 0 ]; then
+  if [ "$(id -u)" -eq 0 ]; then
     uname="$(uname 2> /dev/null)"
 
     # Any of these may fail, but we need to not bail if they do.
@@ -428,7 +441,7 @@ stop_all_netdata() {
     fi
   fi
 
-  if [ -n "$(netdata_pids)" ] && [ -n "$(builtin type -P netdatacli)" ]; then
+  if [ -n "$(netdata_pids)" ] && [ -n "$(type netdatacli)" ]; then
     netdatacli shutdown-agent
     sleep 20
   fi
@@ -442,7 +455,7 @@ stop_all_netdata() {
 trap quit_msg EXIT
 
 #shellcheck source=/dev/null
-source "${ENVIRONMENT_FILE}" || exit 1
+. "${ENVIRONMENT_FILE}" || exit 1
 
 #### STOP NETDATA
 echo >&2 "Stopping a possibly running netdata..."
