@@ -53,11 +53,6 @@ else
 fi
 
 main() {
-  check_claim_opts
-  confirm_root_support
-  get_system_info
-  confirm_install_prefix
-
   if [ "${ACTION}" = "uninstall" ]; then
     uninstall
     cleanup
@@ -66,11 +61,12 @@ main() {
   fi
 
   if [ "${ACTION}" = "reinstall-clean" ]; then
+    NEW_INSTALL_PREFIX="${INSTALL_PREFIX}"
     uninstall
     cleanup
 
     ACTION=
-    INSTALL_PREFIX=
+    INSTALL_PREFIX="${NEW_INSTALL_PREFIX}"
     # shellcheck disable=SC2086
     main
 
@@ -127,6 +123,7 @@ USAGE: kickstart.sh [options]
   --disable-cloud            Disable support for Netdata Cloud (default: detect)
   --require-cloud            Only install if Netdata Cloud can be enabled. Overrides --disable-cloud.
   --install <path>           Specify an installation prefix for local builds (default: autodetect based on system type).
+  --old-install <path>       Specify an old local builds installation prefix for uninstall/reinstall (if it's not default).
   --claim-token              Use a specified token for claiming to Netdata Cloud.
   --claim-rooms              When claiming, add the node to the specified rooms.
   --claim-only               If there is an existing install, only try to claim it, not update it.
@@ -615,7 +612,11 @@ uninstall() {
   get_system_info
   detect_existing_install
 
-  export INSTALL_PREFIX="${ndprefix}"
+  if [ ! -z "${OLD_INSTALL_PREFIX}" ]; then
+    INSTALL_PREFIX="$(echo "${OLD_INSTALL_PREFIX}/" | sed 's/$/netdata/g')"
+  else
+    INSTALL_PREFIX="${ndprefix}"
+  fi
 
   uninstaller="${INSTALL_PREFIX}/usr/libexec/netdata/netdata-uninstaller.sh"
   uninstaller_url="https://raw.githubusercontent.com/netdata/netdata/master/packaging/installer/netdata-uninstaller.sh"
@@ -1624,6 +1625,10 @@ while [ -n "${1}" ]; do
       INSTALL_PREFIX="${2}"
       shift 1
       ;;
+    "--old-install")
+      OLD_INSTALL_PREFIX="${2}"
+      shift 1
+      ;;
     "--uninstall")
       ACTION="uninstall"
       ;;
@@ -1682,6 +1687,11 @@ while [ -n "${1}" ]; do
   esac
   shift 1
 done
+
+check_claim_opts
+confirm_root_support
+get_system_info
+confirm_install_prefix
 
 if [ -z "${ACTION}" ]; then
   handle_existing_install
